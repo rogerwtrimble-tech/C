@@ -34,7 +34,7 @@ class Config:
     # Field aliases for extraction prompt
     FIELD_ALIASES: dict[str, list[str]] = {
         "claim_id": ["claim_id", "claim_number", "case_id", "docket_no", "control_no", "file_no", "tpa_ref"],
-        "patient_name": ["patient_name", "insured", "claimant", "injured_worker", "petitioner", "ee_name", "member"],
+        "patient_name": ["patient_name", "insured", "claimant", "injured_worker", "petitioner", "ee_name", "member", "patient name"],
         "document_type": ["document_type", "doc_type", "form_name", "notice_title", "exhibit_type", "report_type"],
         "date_of_loss": ["date_of_injury", "doi", "date_of_loss", "accident_date", "incident_date", "injury_dt"],
         "diagnosis": ["icd_10", "diagnosis_code", "dx_code", "primary_dx", "nature_of_injury"],

@@ -5,6 +5,7 @@ import hashlib
 from io import BytesIO
 from pathlib import Path
 import pdfplumber
+from .pdf_interrogator import PDFInterrogator
 
 
 class PDFExtractor:
@@ -12,6 +13,7 @@ class PDFExtractor:
     
     def __init__(self):
         self.max_pages_for_single_call = 20
+        self.interrogator = PDFInterrogator()
     
     def get_document_id(self, pdf_path: Path) -> str:
         """Generate a unique document ID from file hash."""
@@ -81,25 +83,36 @@ class PDFExtractor:
         
         return result
     
-    def should_use_vision(self, pdf_path: Path, text: str) -> bool:
-        """
-        Determine if vision API should be used.
+    def interrogate_pdf(self, pdf_path: Path) -> dict:
+        """Interrogate PDF to determine type and processing requirements."""
+        return self.interrogator.interrogate_pdf(pdf_path)
+    
+    def extract_text_clean(self, pdf_path: Path) -> str:
+        """Extract and clean text from native PDFs."""
+        text_parts = []
         
-        Uses vision if:
-        - Document has images
-        - Extracted text is very short (likely scanned)
-        """
-        # Check for images in PDF
         with pdfplumber.open(pdf_path) as pdf:
-            for page in pdf.pages:
-                if page.images:
-                    return True
+            for page_num, page in enumerate(pdf.pages):
+                page_text = page.extract_text() or ""
+                if page_text.strip():
+                    # Clean and normalize text
+                    cleaned = self._clean_text(page_text)
+                    text_parts.append(f"--- Page {page_num + 1} ---\n{cleaned}")
         
-        # Check if text is too short (likely scanned document)
-        if len(text.strip()) < 100:
-            return True
+        return "\n\n".join(text_parts)
+    
+    def _clean_text(self, text: str) -> str:
+        """Clean and normalize extracted text."""
+        # Remove excess whitespace
+        text = ' '.join(text.split())
         
-        return False
+        # Normalize line breaks
+        text = text.replace('\n', ' ').replace('\r', '')
+        
+        # Remove common OCR artifacts
+        text = text.replace('|', 'I')  # Common OCR confusion
+        
+        return text.strip()
     
     def chunk_large_document(self, pdf_path: Path) -> list[tuple[int, int]]:
         """
@@ -121,18 +134,10 @@ class PDFExtractor:
         
         return chunks
     
-    def extract_page_range_text(self, pdf_path: Path, start: int, end: int) -> str:
-        """Extract text from a specific page range."""
-        text_parts = []
-        
-        with pdfplumber.open(pdf_path) as pdf:
-            for page_num in range(start, min(end, len(pdf.pages))):
-                page = pdf.pages[page_num]
-                page_text = page.extract_text() or ""
-                if page_text.strip():
-                    text_parts.append(f"--- Page {page_num + 1} ---\n{page_text}")
-        
-        return "\n\n".join(text_parts)
+    def get_page_types(self, pdf_path: Path) -> list:
+        """Get page-by-page type classification for hybrid documents."""
+        analysis = self.interrogator.analyze_page_types(pdf_path)
+        return analysis.get('page_types', [])
     
     def get_page_count(self, pdf_path: Path) -> int:
         """Get total page count of PDF."""
