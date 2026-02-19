@@ -78,7 +78,7 @@ class ExtractionPipeline:
                 low_confidence_fields = result.get_low_confidence_fields(0.75)
                 status = "success" if not low_confidence_fields else "partial"
                 
-                # Save result
+                # Save result (always save, even if empty)
                 await self._save_result(result, document_id)
                 
                 # Log success
@@ -97,6 +97,42 @@ class ExtractionPipeline:
                     pdf_type=pdf_metadata["pdf_type"],
                     ocr_engine=ocr_engine,
                     notes=f"Low confidence fields: {', '.join(low_confidence_fields)}" if low_confidence_fields else None
+                )
+            else:
+                # Create empty result for failed extractions
+                empty_result = ExtractionResult(
+                    claim_id=None,
+                    patient_name=None,
+                    document_type="Unknown",
+                    date_of_loss=None,
+                    diagnosis=None,
+                    dob=None,
+                    provider_npi=None,
+                    total_billed_amount=None,
+                    confidence_scores={},
+                    processing_path=processing_path,
+                    pdf_metadata=pdf_metadata,
+                    extraction_latency_ms=0.0,
+                    model_version=Config.OLLAMA_MODEL
+                )
+                await self._save_result(empty_result, document_id)
+                
+                # Log failure
+                await self.audit_logger.log_extraction(
+                    document_id=document_id,
+                    document_type="Unknown",
+                    fields_attempted=8,
+                    fields_extracted=0,
+                    fields_skipped=8,
+                    latency_ms=0.0,
+                    confidence_avg=0.0,
+                    confidence_scores={},
+                    status="failed",
+                    model_version=Config.OLLAMA_MODEL,
+                    processing_path=processing_path,
+                    pdf_type=pdf_metadata["pdf_type"],
+                    ocr_engine=ocr_engine,
+                    notes="No attributes extracted - empty result saved"
                 )
             
             return result
@@ -182,7 +218,7 @@ class ExtractionPipeline:
         return result, latency, ocr_engine
     
     async def _save_result(self, result: ExtractionResult, document_id: str) -> Path:
-        """Save extraction result to JSON file."""
+        """Save extraction result to JSON file (always save, even if empty)."""
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         output_filename = f"{document_id}_{timestamp}.json"
         output_path = Config.RESULTS_OUTPUT_DIR / output_filename

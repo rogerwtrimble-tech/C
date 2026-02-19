@@ -103,10 +103,22 @@ Return JSON (and ONLY JSON, no markdown code blocks):
                             
                             if extracted_data:
                                 try:
+                                    # Add required fields that aren't from extraction
+                                    extracted_data.update({
+                                        'claim_id': extracted_data.get('claim_id'),
+                                        'date_of_loss': extracted_data.get('date_of_loss'),
+                                        'provider_npi': extracted_data.get('provider_npi'),
+                                        'total_billed_amount': extracted_data.get('total_billed_amount'),
+                                        'processing_path': 'unknown',  # Will be updated by pipeline
+                                        'pdf_metadata': None,         # Will be set by pipeline
+                                        'extraction_latency_ms': None,  # Will be set by pipeline
+                                        'model_version': 'unknown'    # Will be updated by pipeline
+                                    })
                                     result_obj = ExtractionResult(**extracted_data)
                                     return result_obj, latency_ms
                                 except Exception as e:
                                     # Validation error
+                                    print(f"Validation error: {e}")
                                     return None, latency_ms
                             
                             return None, latency_ms

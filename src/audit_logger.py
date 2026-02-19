@@ -1,10 +1,10 @@
-"""Audit logging system with de-identification."""
+"""De-identified audit logging for HIPAA compliance."""
 
 import json
 import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Dict, Any
 from asyncio import Lock
 
 from .config import Config
@@ -56,49 +56,72 @@ class AuditLogger:
         """Format current timestamp in ISO 8601."""
         return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     
+    async def log_pdf_type_detected(self, document_id: str, pdf_type: str, processing_path: str, alphanumeric_ratio: float) -> None:
+        """Log PDF type detection results."""
+        entry = AuditLogEntry(
+            timestamp=datetime.now(timezone.utc),
+            document_hash=document_id,
+            event_type="pdf_type_detected",
+            pdf_type=pdf_type,
+            processing_path=processing_path,
+            status="detected",
+            notes=f"Alphanumeric ratio: {alphanumeric_ratio:.3f}"
+        )
+        await self._write_entry(entry)
+    
     async def log_extraction(
         self,
         document_id: str,
         document_type: Optional[str],
+        fields_attempted: int,
         fields_extracted: int,
-        fields_successful: int,
+        fields_skipped: int,
         latency_ms: float,
         confidence_avg: float,
+        confidence_scores: Optional[Dict[str, float]],
         status: str,
-        model_version: str
+        model_version: str,
+        processing_path: Optional[str] = None,
+        pdf_type: Optional[str] = None,
+        ocr_engine: Optional[str] = None,
+        notes: Optional[str] = None
     ) -> None:
-        """Log an extraction event."""
+        """Log extraction results with enhanced metadata."""
         entry = AuditLogEntry(
-            timestamp=self._format_timestamp(),
-            document_id=document_id,
+            timestamp=datetime.now(timezone.utc),
+            document_hash=document_id,
+            event_type="extracted",
             document_type_detected=document_type,
+            pdf_type=pdf_type,
+            processing_path=processing_path,
+            fields_attempted=fields_attempted,
             fields_extracted=fields_extracted,
-            fields_successful=fields_successful,
-            extraction_latency_ms=round(latency_ms, 2),
-            claude_model_version=model_version,
-            confidence_avg=round(confidence_avg, 4),
-            status=status
+            fields_skipped=fields_skipped,
+            confidence_scores=confidence_scores,
+            extraction_latency_ms=latency_ms,
+            solar_model_version=model_version,
+            ocr_engine_used=ocr_engine,
+            status=status,
+            notes=notes
         )
-        
-        await self._write_entry(entry.model_dump())
+        await self._write_entry(entry)
     
     async def log_error(
         self,
         document_id: str,
         error_type: str,
         error_message: str,
-        fields_recovered: Optional[dict] = None
+        processing_path: Optional[str] = None
     ) -> None:
-        """Log an error event."""
-        entry = {
-            "timestamp": self._format_timestamp(),
-            "document_id": document_id,
-            "event_type": "error",
-            "error_type": error_type,
-            "error_message": error_message,
-            "fields_recovered": self._deidentify_dict(fields_recovered or {})
-        }
-        
+        """Log extraction error."""
+        entry = AuditLogEntry(
+            timestamp=datetime.now(timezone.utc),
+            document_hash=document_id,
+            event_type="error",
+            processing_path=processing_path,
+            status="failed",
+            notes=f"{error_type}: {error_message}"
+        )
         await self._write_entry(entry)
     
     async def log_document_received(self, document_id: str, filename_hash: str) -> None:
@@ -123,17 +146,17 @@ class AuditLogger:
         
         await self._write_entry(entry)
     
-    async def _write_entry(self, entry: dict) -> None:
+    async def _write_entry(self, entry) -> None:
         """Write entry to log file."""
         async with self._lock:
-            # Check if we need to rotate to new day's file
-            new_log_file = self._get_log_file_path()
-            if new_log_file != self.current_log_file:
-                self.current_log_file = new_log_file
-            
-            # Append to log file
-            with open(self.current_log_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(entry) + "\n")
+            log_file = self._get_log_file_path()
+            with open(log_file, "a", encoding="utf-8") as f:
+                # Handle both dict and Pydantic model
+                if hasattr(entry, 'model_dump'):
+                    entry_dict = entry.model_dump()
+                else:
+                    entry_dict = entry
+                f.write(json.dumps(entry_dict, default=str) + "\n")
     
     def get_log_entries(self, date: Optional[str] = None) -> list[dict]:
         """Read log entries for a specific date."""

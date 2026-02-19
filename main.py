@@ -24,8 +24,12 @@ async def run():
         
         for i, result in enumerate(results, 1):
             print(f"Document {i}:")
-            print(f"  Claim ID: {result.claim_id}")
-            print(f"  Patient: {result.patient_name}")
+            print(f"  Processing Path: {result.processing_path}")
+            if result.pdf_metadata:
+                print(f"  PDF Type: {result.pdf_metadata.get('pdf_type', 'Unknown')}")
+                print(f"  Alphanumeric Ratio: {result.pdf_metadata.get('alphanumeric_ratio', 0):.3f}")
+            print(f"  Claim ID: {result.claim_id or 'Not found'}")
+            print(f"  Patient: {result.patient_name or 'Not found'}")
             print(f"  Document Type: {result.document_type}")
             print(f"  Date of Loss: {result.date_of_loss or 'N/A'}")
             print(f"  Diagnosis: {result.diagnosis or 'N/A'}")
@@ -36,6 +40,13 @@ async def run():
             if result.confidence_scores:
                 avg_conf = sum(result.confidence_scores.values()) / len(result.confidence_scores)
                 print(f"  Avg Confidence: {avg_conf:.1%}")
+                print(f"  Fields Extracted: {len([v for v in result.confidence_scores.values() if v > 0])}/8")
+            else:
+                print("  Avg Confidence: 0%")
+                print("  Fields Extracted: 0/8")
+            
+            if result.extraction_latency_ms:
+                print(f"  Latency: {result.extraction_latency_ms:.0f}ms")
             print()
         
         return 0
