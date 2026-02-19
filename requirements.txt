@@ -7,7 +7,17 @@ python-dotenv>=1.0.0
 cryptography>=41.0.0
 Pillow>=10.0.0
 pytesseract>=0.3.10
+
+# VLM and Multimodal Processing
+vllm>=0.6.0
+transformers>=4.40.0
+torch>=2.1.0
+pdf2image>=1.16.3
+opencv-python>=4.8.0
+
+# Signature Detection
+ultralytics>=8.0.0  # YOLOv8
+
 # Optional OCR engines (Phase 2)
 # easyocr>=1.7.0  # GPU-accelerated OCR
 # paddleocr>=2.7.0.3  # Fastest GPU OCR
-# pdf2image>=1.16.3  # PDF to image conversion

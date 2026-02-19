@@ -4,6 +4,8 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 
+from .visual_models import VisualElements, MultimodalExtractionMetadata
+
 
 class ExtractionResult(BaseModel):
     """Result of medical data extraction from a PDF document."""
@@ -22,10 +24,14 @@ class ExtractionResult(BaseModel):
     
     # Metadata
     confidence_scores: Dict[str, float] = Field(default_factory=dict, description="Confidence scores per field")
-    processing_path: str = Field(description="Processing path taken (native, scanned, hybrid)")
+    processing_path: str = Field(description="Processing path taken (native, scanned, hybrid, multimodal_vlm)")
     pdf_metadata: Optional[Dict[str, Any]] = Field(None, description="PDF interrogation metadata")
     extraction_latency_ms: Optional[float] = Field(None, description="Extraction latency in milliseconds")
     model_version: str = Field(description="Model version used for extraction")
+    
+    # Visual elements (multimodal only)
+    visual_elements: Optional[VisualElements] = Field(None, description="Visual elements detected by VLM")
+    multimodal_metadata: Optional[MultimodalExtractionMetadata] = Field(None, description="Multimodal processing metadata")
     
     @field_validator("claim_id")
     def validate_claim_id(cls, v):
