@@ -40,7 +40,7 @@ class Config:
     SIGNATURE_MAX_SIZE: int = int(os.getenv("SIGNATURE_MAX_SIZE", "500"))
     
     # Image Processing
-    PDF_DPI: int = int(os.getenv("PDF_DPI", "300"))
+    PDF_DPI: int = int(os.getenv("PDF_DPI", "100"))
     IMAGE_PREPROCESSING: bool = os.getenv("IMAGE_PREPROCESSING", "true").lower() == "true"
     DESKEW_ENABLED: bool = os.getenv("DESKEW_ENABLED", "true").lower() == "true"
     IMAGE_FORMAT: str = os.getenv("IMAGE_FORMAT", "PNG")

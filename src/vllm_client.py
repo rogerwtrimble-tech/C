@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 import time
 import logging
+from datetime import datetime
 from PIL import Image
 from io import BytesIO
 
@@ -39,60 +40,10 @@ class VLLMClient:
         Returns:
             Formatted prompt string
         """
-        prompt = """You are a medical document extraction expert. Analyze this document image and extract the following information.
+        prompt = """Extract medical data. JSON only:
 
-**CRITICAL INSTRUCTIONS:**
-1. Return ONLY valid JSON with the exact field names specified below
-2. Use visual layout understanding to locate fields (tables, forms, headers)
-3. For signatures, provide bounding boxes as [x1, y1, x2, y2] in pixels
-4. For handwritten text, transcribe carefully
-5. Include confidence scores (0.0-1.0) for each field
-6. If a field is not found, set it to null
+{"claim_id":null,"patient_name":null,"document_type":null,"date_of_loss":null,"diagnosis":null,"dob":null,"provider_npi":null,"total_billed_amount":null,"confidence_scores":{"claim_id":0,"patient_name":0,"document_type":0,"date_of_loss":0,"diagnosis":0,"dob":0,"provider_npi":0,"total_billed_amount":0}}
 
-**Fields to Extract:**
-"""
-        
-        for field_name, aliases in field_aliases.items():
-            aliases_str = ", ".join(aliases)
-            prompt += f"\n- {field_name} (may appear as: {aliases_str})"
-        
-        prompt += """
-
-**Additional Visual Elements:**
-- signatures: List of signature locations with bounding boxes
-- stamps: List of stamp/seal locations with bounding boxes
-- handwritten_notes: Transcribe any handwritten annotations
-- tables: Extract structured table data if present
-- form_fields: Identify form field labels and values
-
-**Output Format:**
-Return a JSON object with this structure:
-{
-  "claim_id": "value or null",
-  "patient_name": "value or null",
-  "document_type": "value or null",
-  "date_of_loss": "YYYY-MM-DD or null",
-  "diagnosis": "value or null",
-  "dob": "YYYY-MM-DD or null",
-  "provider_npi": "value or null",
-  "total_billed_amount": "value or null",
-  "confidence_scores": {
-    "claim_id": 0.0-1.0,
-    "patient_name": 0.0-1.0,
-    ...
-  },
-  "visual_elements": {
-    "signatures": [
-      {"bbox": [x1, y1, x2, y2], "confidence": 0.95, "label": "patient signature"}
-    ],
-    "stamps": [...],
-    "handwritten_notes": "transcribed text",
-    "tables": [...],
-    "form_fields": {...}
-  }
-}
-
-Return ONLY the JSON, no explanation or markdown formatting.
 """
         return prompt
     
@@ -152,7 +103,7 @@ Return ONLY the JSON, no explanation or markdown formatting.
                                 }
                             ],
                             "temperature": 0.1,
-                            "max_tokens": 4096,
+                            "max_tokens": 512,
                             "top_p": 0.9
                         }
                         
@@ -234,9 +185,38 @@ Return ONLY the JSON, no explanation or markdown formatting.
         
         return img_b64
     
+    def _convert_date_format(self, date_str: str) -> str:
+        """
+        Convert various date formats to YYYY-MM-DD.
+        
+        Args:
+            date_str: Date string in various formats
+            
+        Returns:
+            Date in YYYY-MM-DD format or original string if conversion fails
+        """
+        if not date_str or date_str == "null":
+            return date_str
+            
+        # Common date formats to try
+        formats = [
+            "%m/%d/%Y", "%m-%d-%Y",  # MM/DD/YYYY, MM-DD-YYYY
+            "%Y/%m/%d", "%Y-%m-%d",  # YYYY/MM/DD, YYYY-MM-DD (already correct)
+            "%d/%m/%Y", "%d-%m-%Y",  # DD/MM/YYYY, DD-MM-YYYY
+        ]
+        
+        for fmt in formats:
+            try:
+                dt = datetime.strptime(date_str, fmt)
+                return dt.strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+                
+        return date_str  # Return original if no format matches
+    
     def _parse_json_response(self, response_text: str) -> Optional[Dict]:
         """
-        Parse JSON from VLM response.
+        Parse JSON from VLM response and convert date formats.
         
         Args:
             response_text: Raw response text
@@ -258,6 +238,14 @@ Return ONLY the JSON, no explanation or markdown formatting.
             
             # Parse JSON
             data = json.loads(response_text)
+            
+            # Convert date formats
+            if data:
+                date_fields = ["date_of_loss", "dob"]
+                for field in date_fields:
+                    if field in data and data[field]:
+                        data[field] = self._convert_date_format(data[field])
+            
             return data
             
         except json.JSONDecodeError:
@@ -268,6 +256,14 @@ Return ONLY the JSON, no explanation or markdown formatting.
                 if start >= 0 and end > start:
                     json_str = response_text[start:end]
                     data = json.loads(json_str)
+                    
+                    # Convert date formats
+                    if data:
+                        date_fields = ["date_of_loss", "dob"]
+                        for field in date_fields:
+                            if field in data and data[field]:
+                                data[field] = self._convert_date_format(data[field])
+                    
                     return data
             except:
                 pass
