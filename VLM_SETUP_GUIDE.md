@@ -64,47 +64,29 @@ chmod +x scripts/setup_vllm.sh
 ./scripts/setup_vllm.sh
 ```
 
-#### Option B: Manual Setup (GPTQ Quantization)
+#### Option B: Manual Setup (No Quantization - Required for 7B Model)
+
+**Note: Neither AWQ nor GPTQ quantization are available for Qwen2.5-VL-7B**
 
 ```bash
 # Install vLLM
 pip install vllm>=0.6.0
 
-# Start vLLM server with Qwen2.5-VL-7B (optimized for 12GB VRAM)
-python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen2.5-VL-7B-Instruct \
-    --quantization gptq \
-    --dtype auto \
-    --gpu-memory-utilization 0.85 \
-    --max-model-len 4096 \
-    --port 8000 \
-    --host 0.0.0.0 \
-    --trust-remote-code
-```
-
-#### Option C: Manual Setup (No Quantization - Fallback)
-
-**Use if GPTQ fails or you have more VRAM (15GB+):**
-
-```bash
-# Install vLLM
-pip install vllm>=0.6.0
-
-# Start vLLM server without quantization
+# Start vLLM server without quantization (optimized for 12GB VRAM)
 python -m vllm.entrypoints.openai.api_server \
     --model Qwen/Qwen2.5-VL-7B-Instruct \
     --dtype auto \
-    --gpu-memory-utilization 0.7 \
+    --gpu-memory-utilization 0.75 \
     --max-model-len 2048 \
     --port 8000 \
     --host 0.0.0.0 \
     --trust-remote-code
 ```
 
-**Or use the fallback script:**
+**Or use the setup script:**
 ```bash
-chmod +x scripts/setup_vllm_no_quant.sh
-./scripts/setup_vllm_no_quant.sh
+chmod +x scripts/setup_vllm.sh
+./scripts/setup_vllm.sh
 ```
 
 **Note**: First run will download ~14GB model (7B). Subsequent runs use cached model.
@@ -166,16 +148,17 @@ asyncio.run(test())
 - Enable tensor parallelism if multiple GPUs available
 
 **For 12GB VRAM (RTX 4070/3060)**:
-- Qwen2.5-VL-7B (AWQ 4-bit): ~14GB model → fits entirely in VRAM
-- Set `VLM_GPU_MEMORY_UTILIZATION=0.85`
+- Qwen2.5-VL-7B (FP16/BF16): ~14GB model → fits with optimization
+- Set `VLM_GPU_MEMORY_UTILIZATION=0.75`
 - Performance: 2-3 sec/page (vs 4-7 sec/page for 72B)
 - Accuracy: 90%+ (vs 95%+ for 72B)
+- Memory: Uses ~10-11GB VRAM with optimizations
 
 ### Batch Processing
 
 ```bash
 # In .env (12GB VRAM optimized)
-VLM_MAX_CONCURRENT_PAGES=2  # Process 2 pages in parallel
+VLM_MAX_CONCURRENT_PAGES=1  # Process 1 page at a time
 VLM_BATCH_SIZE=1            # Batch size for inference
 PARALLEL_PAGE_PROCESSING=true
 

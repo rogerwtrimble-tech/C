@@ -37,7 +37,7 @@ echo "=========================================="
 echo "Starting vLLM Server"
 echo "=========================================="
 echo "Model: Qwen/Qwen2.5-VL-7B-Instruct"
-echo "Quantization: GPTQ"
+echo "Quantization: None (FP16/BF16)"
 echo "Port: 8000"
 echo "Optimized for 12GB VRAM"
 echo "=========================================="
@@ -45,10 +45,9 @@ echo "=========================================="
 # Start vLLM server
 python -m vllm.entrypoints.openai.api_server \
     --model Qwen/Qwen2.5-VL-7B-Instruct \
-    --quantization gptq \
     --dtype auto \
-    --gpu-memory-utilization 0.85 \
-    --max-model-len 4096 \
+    --gpu-memory-utilization 0.75 \
+    --max-model-len 2048 \
     --port 8000 \
     --host 0.0.0.0 \
     --served-model-name Qwen/Qwen2.5-VL-7B-Instruct \
