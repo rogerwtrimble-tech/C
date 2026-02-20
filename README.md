@@ -3,6 +3,7 @@
 HIPAA-Compliant **Fully Local Processing** with dual-mode support:
 - **Grade A (85-90% accuracy)**: Multimodal VLM with Qwen2.5-VL-3B + YOLOv8 signature detection
 - **Grade B (85-90% accuracy)**: Legacy text-only with SOLAR 10.7B + OCR
+- **Grade C (85-90% accuracy)**: Chunked processing for large documents
 
 **System Requirements**: Windows 11 + WSL 2.0 + Docker Desktop + NVIDIA GPU (12GB+ VRAM for VLM, 12GB for legacy)
 
