@@ -42,7 +42,7 @@ class VLLMClient:
         """
         prompt = """Extract medical data from document. CRITICAL: Only extract data explicitly visible in the document. Never fabricate or guess values. If information is not found, use "Not found". JSON only:
 
-{"claim_id":"Not found","patient_name":"Not found","document_type":"Not found","date_of_loss":"Not found","diagnosis":"Not found","dob":"Not found","provider_npi":"Not found","total_billed_amount":"Not found","confidence_scores":{"claim_id":0,"patient_name":0,"document_type":0,"date_of_loss":0,"diagnosis":0,"dob":0,"provider_npi":0,"total_billed_amount":0}}
+{"claim_id":"Not found","patient_name":"Not found","document_type":"Not found","date_of_loss":"Not found","diagnosis":"Not found","dob":"Not found","provider_npi":"Not found","total_billed_amount":"Not found"}
 
 """
         return prompt
@@ -251,6 +251,102 @@ class VLLMClient:
         
         return any(re.match(pattern, date_str) for pattern in date_patterns)
     
+    def _calculate_confidence_scores(self, data: Dict) -> Dict:
+        """
+        Calculate confidence scores based on data characteristics.
+        
+        Args:
+            data: Extracted data dictionary
+            
+        Returns:
+            Data with added confidence_scores
+        """
+        confidence_scores = {}
+        
+        # Define confidence rules for each field
+        for field in ['claim_id', 'patient_name', 'document_type', 'date_of_loss', 'diagnosis', 'dob', 'provider_npi', 'total_billed_amount']:
+            value = data.get(field, 'Not found')
+            
+            if value == 'Not found' or not value:
+                confidence_scores[field] = 0.0
+            else:
+                # Calculate confidence based on field characteristics
+                confidence = self._calculate_field_confidence(field, value)
+                confidence_scores[field] = confidence
+        
+        data['confidence_scores'] = confidence_scores
+        return data
+    
+    def _calculate_field_confidence(self, field: str, value: str) -> float:
+        """
+        Calculate confidence for a specific field based on heuristics.
+        
+        Args:
+            field: Field name
+            value: Field value
+            
+        Returns:
+            Confidence score (0.0-1.0)
+        """
+        if not value or value == 'Not found':
+            return 0.0
+        
+        # Base confidence
+        confidence = 0.8
+        
+        # Field-specific rules
+        if field in ['claim_id', 'provider_npi']:
+            # IDs and codes: higher confidence for proper format
+            if any(c.isdigit() for c in value) and len(value) >= 5:
+                confidence = 0.9
+            elif len(value) < 3:
+                confidence = 0.3
+                
+        elif field == 'patient_name':
+            # Names: higher confidence for proper case and length
+            words = value.split()
+            if len(words) >= 2 and all(word.strip() for word in words):
+                confidence = 0.9
+            elif len(words) == 1:
+                confidence = 0.6
+                
+        elif field in ['date_of_loss', 'dob']:
+            # Dates: higher confidence for proper format
+            if self._is_valid_date_format(value):
+                confidence = 0.95
+            else:
+                confidence = 0.4
+                
+        elif field == 'diagnosis':
+            # Diagnosis: higher confidence for medical codes or detailed descriptions
+            if any(c.isdigit() for c in value) or len(value) > 10:
+                confidence = 0.85
+            elif len(value) < 5:
+                confidence = 0.5
+                
+        elif field == 'total_billed_amount':
+            # Amounts: higher confidence for currency format
+            if '$' in value or any(c.isdigit() for c in value):
+                confidence = 0.9
+            else:
+                confidence = 0.4
+                
+        elif field == 'document_type':
+            # Document type: higher confidence for specific types
+            doc_types = ['discharge', 'report', 'summary', 'history', 'lab', 'result', 'form']
+            if any(dt in value.lower() for dt in doc_types):
+                confidence = 0.85
+            else:
+                confidence = 0.6
+        
+        # Adjust based on value characteristics
+        if len(value) < 2:
+            confidence = min(confidence, 0.3)  # Very short values are less confident
+        elif len(set(value.lower())) <= 2 and len(value) > 3:
+            confidence = min(confidence, 0.2)  # Repeated characters are suspicious
+        
+        return max(0.0, min(1.0, confidence))
+    
     def _convert_date_format(self, date_str: str) -> str:
         """
         Convert various date formats to YYYY-MM-DD.
@@ -314,6 +410,9 @@ class VLLMClient:
                 for field in date_fields:
                     if field in data and data[field] and data[field] != "Not found":
                         data[field] = self._convert_date_format(data[field])
+                
+                # Add confidence scores in post-processing
+                data = self._calculate_confidence_scores(data)
             
             return data
             
@@ -335,6 +434,9 @@ class VLLMClient:
                         for field in date_fields:
                             if field in data and data[field] and data[field] != "Not found":
                                 data[field] = self._convert_date_format(data[field])
+                        
+                        # Add confidence scores in post-processing
+                        data = self._calculate_confidence_scores(data)
                     
                     return data
             except:
