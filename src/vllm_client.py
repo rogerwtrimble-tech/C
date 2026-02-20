@@ -3,11 +3,14 @@
 import asyncio
 import aiohttp
 import base64
+import json
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 import time
 import logging
+from PIL import Image
+from io import BytesIO
 
 from .config import Config
 from .models import ExtractionResult, VisualElements
