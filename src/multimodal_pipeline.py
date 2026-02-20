@@ -20,6 +20,7 @@ from .audit_logger import AuditLogger
 from .secure_handler import SecureFileHandler
 from .performance_monitor import performance_monitor
 from .performance_analyzer import log_performance_recommendations
+from .path_utils import path_manager
 
 
 class MultimodalPipeline:
@@ -365,6 +366,8 @@ class MultimodalPipeline:
         if input_dir is None:
             input_dir = Config.PDF_INPUT_DIR
         
+        # Ensure input directory is properly normalized
+        input_dir = path_manager.normalize_path(input_dir)
         pdf_files = list(input_dir.glob("*.pdf"))
         
         if not pdf_files:

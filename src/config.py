@@ -3,6 +3,8 @@
 import os
 from pathlib import Path
 from typing import Optional
+
+from .path_utils import path_manager
 from dotenv import load_dotenv
 import base64
 
@@ -49,13 +51,14 @@ class Config:
     # OCR Settings (Fallback)
     OCR_ENGINE: str = os.getenv("OCR_ENGINE", "tesseract")
     
-    # Paths
-    PDF_INPUT_DIR: Path = Path(os.getenv("PDF_INPUT_DIR", "pdfs"))
-    RESULTS_OUTPUT_DIR: Path = Path(os.getenv("RESULTS_OUTPUT_DIR", "results"))
-    AUDIT_LOG_PATH: Path = Path(os.getenv("AUDIT_LOG_PATH", "logs/audit"))
-    SIGNATURE_OUTPUT_DIR: Path = Path(os.getenv("SIGNATURE_OUTPUT_DIR", "results/signatures"))
-    TEMP_IMAGE_DIR: Path = Path(os.getenv("TEMP_IMAGE_DIR", "temp/images"))
-    MODEL_CACHE_DIR: Path = Path(os.getenv("MODEL_CACHE_DIR", "models/cache"))
+    # Paths - Cross-platform normalized
+    _PROJECT_ROOT = path_manager.get_project_root()
+    PDF_INPUT_DIR: Path = path_manager.normalize_path(os.getenv("PDF_INPUT_DIR", _PROJECT_ROOT / "pdfs"))
+    RESULTS_OUTPUT_DIR: Path = path_manager.normalize_path(os.getenv("RESULTS_OUTPUT_DIR", _PROJECT_ROOT / "results"))
+    AUDIT_LOG_PATH: Path = path_manager.normalize_path(os.getenv("AUDIT_LOG_PATH", _PROJECT_ROOT / "logs" / "audit"))
+    SIGNATURE_OUTPUT_DIR: Path = path_manager.normalize_path(os.getenv("SIGNATURE_OUTPUT_DIR", _PROJECT_ROOT / "results" / "signatures"))
+    TEMP_IMAGE_DIR: Path = path_manager.normalize_path(os.getenv("TEMP_IMAGE_DIR", _PROJECT_ROOT / "temp" / "images"))
+    MODEL_CACHE_DIR: Path = path_manager.normalize_path(os.getenv("MODEL_CACHE_DIR", _PROJECT_ROOT / "models" / "cache"))
     
     # Security settings
     SECURE_DELETION_PASSES: int = int(os.getenv("SECURE_DELETION_PASSES", "3"))

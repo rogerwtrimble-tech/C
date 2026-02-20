@@ -40,6 +40,11 @@ env/
 logs/
 results/
 *.log
+*.jsonl
+audit_*.jsonl
+**/audit/*.jsonl
+**/logs/**/*.jsonl
+**/logs/**/*.log
 
 # Temporary files
 tmp/

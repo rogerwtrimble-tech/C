@@ -9,6 +9,7 @@ from asyncio import Lock
 
 from .config import Config
 from .models import AuditLogEntry
+from .path_utils import path_manager
 
 
 class AuditLogger:
@@ -29,7 +30,7 @@ class AuditLogger:
         
         self._initialized = True
         self.log_path = Config.AUDIT_LOG_PATH
-        self.log_path.mkdir(parents=True, exist_ok=True)
+        self.log_path = path_manager.ensure_directory(self.log_path)
         self.current_log_file = self._get_log_file_path()
     
     def _get_log_file_path(self) -> Path:
