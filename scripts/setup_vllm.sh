@@ -27,7 +27,7 @@ fi
 # Install system dependencies
 echo "Installing system dependencies..."
 sudo apt-get update
-sudo apt-get install -y python3 python3-pip python3-venv git curl build-essential
+sudo apt-get install -y python3 python3-pip python3-venv git curl build-essential poppler-utils
 
 # Install additional dependencies
 echo "Installing dependencies..."
