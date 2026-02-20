@@ -49,14 +49,17 @@ async def run():
                 print(f"  Alphanumeric Ratio: {result.pdf_metadata.get('alphanumeric_ratio', 0):.3f}")
             
             # Show extracted fields
-            print(f"  Claim ID: {result.claim_id or 'Not found'}")
-            print(f"  Patient: {result.patient_name or 'Not found'}")
-            print(f"  Document Type: {result.document_type}")
-            print(f"  Date of Loss: {result.date_of_loss or 'N/A'}")
-            print(f"  Diagnosis: {result.diagnosis or 'N/A'}")
-            print(f"  DOB: {result.dob or 'N/A'}")
-            print(f"  Provider NPI: {result.provider_npi or 'N/A'}")
-            print(f"  Total Billed: {result.total_billed_amount or 'N/A'}")
+            def display_field(value):
+                return value if value and value != "Not found" else "Not found"
+            
+            print(f"  Claim ID: {display_field(result.claim_id)}")
+            print(f"  Patient: {display_field(result.patient_name)}")
+            print(f"  Document Type: {display_field(result.document_type)}")
+            print(f"  Date of Loss: {display_field(result.date_of_loss)}")
+            print(f"  Diagnosis: {display_field(result.diagnosis)}")
+            print(f"  DOB: {display_field(result.dob)}")
+            print(f"  Provider NPI: {display_field(result.provider_npi)}")
+            print(f"  Total Billed: {display_field(result.total_billed_amount)}")
             
             # Show confidence metrics
             if result.confidence_scores:

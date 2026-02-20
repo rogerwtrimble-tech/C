@@ -40,9 +40,9 @@ class VLLMClient:
         Returns:
             Formatted prompt string
         """
-        prompt = """Extract medical data. JSON only:
+        prompt = """Extract medical data from document. CRITICAL: Only extract data explicitly visible in the document. Never fabricate or guess values. If information is not found, use "Not found". JSON only:
 
-{"claim_id":null,"patient_name":null,"document_type":null,"date_of_loss":null,"diagnosis":null,"dob":null,"provider_npi":null,"total_billed_amount":null,"confidence_scores":{"claim_id":0,"patient_name":0,"document_type":0,"date_of_loss":0,"diagnosis":0,"dob":0,"provider_npi":0,"total_billed_amount":0}}
+{"claim_id":"Not found","patient_name":"Not found","document_type":"Not found","date_of_loss":"Not found","diagnosis":"Not found","dob":"Not found","provider_npi":"Not found","total_billed_amount":"Not found","confidence_scores":{"claim_id":0,"patient_name":0,"document_type":0,"date_of_loss":0,"diagnosis":0,"dob":0,"provider_npi":0,"total_billed_amount":0}}
 
 """
         return prompt
@@ -185,6 +185,72 @@ class VLLMClient:
         
         return img_b64
     
+    def _validate_extracted_data(self, data: Dict) -> Dict:
+        """
+        Validate extracted data to prevent fabricated values.
+        
+        Args:
+            data: Raw extracted data from VLM
+            
+        Returns:
+            Validated data with "Not found" for missing/fabricated values
+        """
+        # Common fabricated patterns to detect
+        fabricated_patterns = [
+            'john doe', 'jane doe', 'john smith', 'jane smith',
+            'patient', 'unknown', 'n/a', 'na', 'none', 'null',
+            'example', 'test', 'sample', 'placeholder'
+        ]
+        
+        # Fields that should never contain fabricated data
+        text_fields = [
+            'claim_id', 'patient_name', 'document_type', 
+            'diagnosis', 'provider_npi', 'total_billed_amount'
+        ]
+        
+        # Validate each field
+        for field in text_fields:
+            if field in data:
+                value = str(data[field]).strip()
+                
+                # Check for null/empty values
+                if not value or value.lower() in ['null', 'none', '']:
+                    data[field] = "Not found"
+                # Check for fabricated patterns
+                elif any(pattern in value.lower() for pattern in fabricated_patterns):
+                    data[field] = "Not found"
+                # Check for placeholder-like values (all same character repeated)
+                elif len(set(value.lower())) <= 2 and len(value) > 3:
+                    data[field] = "Not found"
+        
+        # Special validation for dates
+        date_fields = ['date_of_loss', 'dob']
+        for field in date_fields:
+            if field in data:
+                value = str(data[field]).strip()
+                if not value or value.lower() in ['null', 'none', '', 'not found']:
+                    data[field] = "Not found"
+                # Validate date format
+                elif not self._is_valid_date_format(value):
+                    data[field] = "Not found"
+        
+        return data
+    
+    def _is_valid_date_format(self, date_str: str) -> bool:
+        """Check if date string is in a valid format."""
+        if not date_str or date_str == "Not found":
+            return False
+        
+        # Check for common date formats
+        import re
+        date_patterns = [
+            r'^\d{4}-\d{2}-\d{2}$',  # YYYY-MM-DD
+            r'^\d{2}/\d{2}/\d{4}$',  # MM/DD/YYYY
+            r'^\d{2}-\d{2}-\d{4}$',  # MM-DD-YYYY
+        ]
+        
+        return any(re.match(pattern, date_str) for pattern in date_patterns)
+    
     def _convert_date_format(self, date_str: str) -> str:
         """
         Convert various date formats to YYYY-MM-DD.
@@ -239,11 +305,14 @@ class VLLMClient:
             # Parse JSON
             data = json.loads(response_text)
             
-            # Convert date formats
+            # Validate data to prevent fabricated values
             if data:
+                data = self._validate_extracted_data(data)
+                
+                # Convert date formats
                 date_fields = ["date_of_loss", "dob"]
                 for field in date_fields:
-                    if field in data and data[field]:
+                    if field in data and data[field] and data[field] != "Not found":
                         data[field] = self._convert_date_format(data[field])
             
             return data
@@ -257,11 +326,14 @@ class VLLMClient:
                     json_str = response_text[start:end]
                     data = json.loads(json_str)
                     
-                    # Convert date formats
+                    # Validate data to prevent fabricated values
                     if data:
+                        data = self._validate_extracted_data(data)
+                        
+                        # Convert date formats
                         date_fields = ["date_of_loss", "dob"]
                         for field in date_fields:
-                            if field in data and data[field]:
+                            if field in data and data[field] and data[field] != "Not found":
                                 data[field] = self._convert_date_format(data[field])
                     
                     return data

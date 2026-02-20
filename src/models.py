@@ -35,13 +35,13 @@ class ExtractionResult(BaseModel):
     
     @field_validator("claim_id")
     def validate_claim_id(cls, v):
-        if v and len(v) > 50:
+        if v and v != "Not found" and len(v) > 50:
             raise ValueError("claim_id must be 1-50 characters")
         return v
     
     @field_validator("dob", "date_of_loss", mode="before")
     def validate_dates(cls, v):
-        if v and v != "Unclear" and v is not None:
+        if v and v != "Not found" and v != "Unclear" and v is not None:
             try:
                 datetime.strptime(v, "%Y-%m-%d")
             except ValueError:
