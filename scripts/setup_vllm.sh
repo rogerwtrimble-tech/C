@@ -4,7 +4,7 @@
 set -e
 
 echo "=========================================="
-echo "vLLM Setup for Qwen2.5-VL-7B (12GB VRAM)"
+echo "vLLM Setup for Qwen2.5-VL-3B (12GB VRAM)"
 echo "=========================================="
 
 # Check for CUDA
@@ -40,21 +40,22 @@ echo ""
 echo "=========================================="
 echo "Starting vLLM Server"
 echo "=========================================="
-echo "Model: Qwen/Qwen2.5-VL-7B-Instruct"
-echo "Quantization: None (FP16/BF16)"
+echo "Model: Qwen/Qwen2.5-VL-3B-Instruct"
+echo "Quantization: GPTQ"
 echo "Port: 8000"
 echo "Optimized for 12GB VRAM"
 echo "=========================================="
 
 # Start vLLM server
 python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen2.5-VL-7B-Instruct \
+    --model Qwen/Qwen2.5-VL-3B-Instruct \
+    --quantization gptq \
     --dtype auto \
-    --gpu-memory-utilization 0.75 \
+    --gpu-memory-utilization 0.8 \
     --max-model-len 2048 \
     --port 8000 \
     --host 0.0.0.0 \
-    --served-model-name Qwen/Qwen2.5-VL-7B-Instruct \
+    --served-model-name Qwen/Qwen2.5-VL-3B-Instruct \
     --trust-remote-code
 
 echo ""

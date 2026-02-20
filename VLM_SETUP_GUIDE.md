@@ -12,7 +12,7 @@ This guide covers setting up the Grade A multimodal extraction system using Qwen
 - **OS**: Windows 11 with WSL 2.0, or Linux
 
 **VRAM Requirements:**
-- **12GB VRAM**: Qwen2.5-VL-7B (90%+ accuracy)
+- **12GB VRAM**: Qwen2.5-VL-3B (85-90% accuracy)
 - **24GB VRAM**: Qwen2.5-VL-72B (95%+ accuracy)
 
 ### Software
@@ -64,19 +64,20 @@ chmod +x scripts/setup_vllm.sh
 ./scripts/setup_vllm.sh
 ```
 
-#### Option B: Manual Setup (No Quantization - Required for 7B Model)
+#### Option B: Manual Setup (GPTQ Quantization - Required for 12GB VRAM)
 
-**Note: Neither AWQ nor GPTQ quantization are available for Qwen2.5-VL-7B**
+**Note: Qwen2.5-VL-3B with GPTQ quantization fits in 12GB VRAM**
 
 ```bash
 # Install vLLM
 pip install vllm>=0.6.0
 
-# Start vLLM server without quantization (optimized for 12GB VRAM)
+# Start vLLM server with GPTQ quantization (optimized for 12GB VRAM)
 python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen2.5-VL-7B-Instruct \
+    --model Qwen/Qwen2.5-VL-3B-Instruct \
+    --quantization gptq \
     --dtype auto \
-    --gpu-memory-utilization 0.75 \
+    --gpu-memory-utilization 0.8 \
     --max-model-len 2048 \
     --port 8000 \
     --host 0.0.0.0 \
@@ -89,7 +90,7 @@ chmod +x scripts/setup_vllm.sh
 ./scripts/setup_vllm.sh
 ```
 
-**Note**: First run will download ~14GB model (7B). Subsequent runs use cached model.
+**Note**: First run will download ~6GB model (3B). Subsequent runs use cached model.
 
 ### 4. Download YOLOv8 Signature Model
 
@@ -148,11 +149,11 @@ asyncio.run(test())
 - Enable tensor parallelism if multiple GPUs available
 
 **For 12GB VRAM (RTX 4070/3060)**:
-- Qwen2.5-VL-7B (FP16/BF16): ~14GB model → fits with optimization
-- Set `VLM_GPU_MEMORY_UTILIZATION=0.75`
-- Performance: 2-3 sec/page (vs 4-7 sec/page for 72B)
-- Accuracy: 90%+ (vs 95%+ for 72B)
-- Memory: Uses ~10-11GB VRAM with optimizations
+- Qwen2.5-VL-3B (GPTQ): ~6GB model → fits comfortably
+- Set `VLM_GPU_MEMORY_UTILIZATION=0.8`
+- Performance: 1-2 sec/page (vs 4-7 sec/page for 72B)
+- Accuracy: 85-90% (vs 95%+ for 72B)
+- Memory: Uses ~5-6GB VRAM with GPTQ quantization
 
 ### Batch Processing
 
