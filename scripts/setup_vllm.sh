@@ -40,22 +40,22 @@ echo ""
 echo "=========================================="
 echo "Starting vLLM Server"
 echo "=========================================="
-echo "Model: Qwen/Qwen2.5-VL-3B-Instruct"
-echo "Quantization: GPTQ"
+echo "Model: Qwen/Qwen2.5-VL-3B-Instruct-AWQ"
+echo "Quantization: AWQ"
 echo "Port: 8000"
 echo "Optimized for 12GB VRAM"
 echo "=========================================="
 
 # Start vLLM server
 python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen2.5-VL-3B-Instruct \
-    --quantization gptq \
+    --model Qwen/Qwen2.5-VL-3B-Instruct-AWQ \
+    --quantization awq \
     --dtype auto \
-    --gpu-memory-utilization 0.8 \
+    --gpu-memory-utilization 0.75 \
     --max-model-len 2048 \
     --port 8000 \
     --host 0.0.0.0 \
-    --served-model-name Qwen/Qwen2.5-VL-3B-Instruct \
+    --served-model-name Qwen/Qwen2.5-VL-3B-Instruct-AWQ \
     --trust-remote-code
 
 echo ""

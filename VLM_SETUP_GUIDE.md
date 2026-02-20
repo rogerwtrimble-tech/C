@@ -64,20 +64,20 @@ chmod +x scripts/setup_vllm.sh
 ./scripts/setup_vllm.sh
 ```
 
-#### Option B: Manual Setup (GPTQ Quantization - Required for 12GB VRAM)
+#### Option B: Manual Setup (AWQ Quantization - Required for 12GB VRAM)
 
-**Note: Qwen2.5-VL-3B with GPTQ quantization fits in 12GB VRAM**
+**Note: Qwen2.5-VL-3B with AWQ quantization fits in 12GB VRAM**
 
 ```bash
 # Install vLLM
 pip install vllm>=0.6.0
 
-# Start vLLM server with GPTQ quantization (optimized for 12GB VRAM)
+# Start vLLM server with AWQ quantization (optimized for 12GB VRAM)
 python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen2.5-VL-3B-Instruct \
-    --quantization gptq \
+    --model Qwen/Qwen2.5-VL-3B-Instruct-AWQ \
+    --quantization awq \
     --dtype auto \
-    --gpu-memory-utilization 0.8 \
+    --gpu-memory-utilization 0.75 \
     --max-model-len 2048 \
     --port 8000 \
     --host 0.0.0.0 \
@@ -149,11 +149,11 @@ asyncio.run(test())
 - Enable tensor parallelism if multiple GPUs available
 
 **For 12GB VRAM (RTX 4070/3060)**:
-- Qwen2.5-VL-3B (GPTQ): ~6GB model → fits comfortably
-- Set `VLM_GPU_MEMORY_UTILIZATION=0.8`
+- Qwen2.5-VL-3B (AWQ): ~6GB model → fits comfortably
+- Set `VLM_GPU_MEMORY_UTILIZATION=0.75`
 - Performance: 1-2 sec/page (vs 4-7 sec/page for 72B)
 - Accuracy: 85-90% (vs 95%+ for 72B)
-- Memory: Uses ~5-6GB VRAM with GPTQ quantization
+- Memory: Uses ~5-6GB VRAM with AWQ quantization
 
 ### Batch Processing
 

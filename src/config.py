@@ -18,13 +18,13 @@ class Config:
     
     # VLM Settings (Multimodal Processing)
     VLM_ENABLED: bool = os.getenv("VLM_ENABLED", "true").lower() == "true"
-    VLM_MODEL: str = os.getenv("VLM_MODEL", "Qwen/Qwen2.5-VL-3B-Instruct")
+    VLM_MODEL: str = os.getenv("VLM_MODEL", "Qwen/Qwen2.5-VL-3B-Instruct-AWQ")
     VLM_HOST: str = os.getenv("VLM_HOST", "localhost")
     VLM_PORT: int = int(os.getenv("VLM_PORT", "8000"))
-    VLM_QUANTIZATION: str = os.getenv("VLM_QUANTIZATION", "gptq")
+    VLM_QUANTIZATION: str = os.getenv("VLM_QUANTIZATION", "awq")
     VLM_MAX_CONCURRENT_PAGES: int = int(os.getenv("VLM_MAX_CONCURRENT_PAGES", "1"))
     VLM_BATCH_SIZE: int = int(os.getenv("VLM_BATCH_SIZE", "1"))
-    VLM_GPU_MEMORY_UTILIZATION: float = float(os.getenv("VLM_GPU_MEMORY_UTILIZATION", "0.8"))
+    VLM_GPU_MEMORY_UTILIZATION: float = float(os.getenv("VLM_GPU_MEMORY_UTILIZATION", "0.75"))
     VLM_MAX_MODEL_LEN: int = int(os.getenv("VLM_MAX_MODEL_LEN", "2048"))
     
     # Ollama SLM settings (Legacy text-only mode)
