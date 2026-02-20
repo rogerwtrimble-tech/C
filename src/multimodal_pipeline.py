@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Any
 import hashlib
 
 from .config import Config
-from .models import ExtractionResult, VisualElements, MultimodalMetadata
+from .models import ExtractionResult
 from .visual_models import (
     VisualElements, MultimodalExtractionMetadata,
     SignatureElement, BoundingBox
