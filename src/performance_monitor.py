@@ -1,6 +1,7 @@
 """Performance monitoring for tensor operations and memory usage."""
 
 import time
+import platform
 import psutil
 import torch
 import logging
@@ -44,24 +45,45 @@ class PerformanceMonitor:
         end_time = time.time()
         duration_ms = (end_time - start_time) * 1000
         
-        # System memory
-        memory_before = self.process.memory_info().rss / 1024 / 1024  # MB
-        memory_after = self.process.memory_info().rss / 1024 / 1024   # MB
-        memory_peak = self.process.memory_info().peak_wset / 1024 / 1024  # MB
+        # System memory - with cross-platform error handling
+        try:
+            memory_info = self.process.memory_info()
+            memory_before = memory_info.rss / 1024 / 1024  # MB
+            memory_after = memory_info.rss / 1024 / 1024   # MB
+            
+            # peak_wset is Windows-specific, use fallback for Linux/WSL
+            memory_peak = None
+            if hasattr(memory_info, 'peak_wset'):
+                memory_peak = memory_info.peak_wset / 1024 / 1024  # MB (Windows)
+            elif hasattr(memory_info, 'vms'):  # Linux/WSL
+                memory_peak = memory_info.vms / 1024 / 1024  # MB (Linux)
+            else:
+                memory_peak = max(memory_before, memory_after)  # Fallback
+        except (AttributeError, OSError) as e:
+            # Fallback for any platform-specific issues
+            logging.warning(f"Performance monitoring memory info failed: {e}")
+            memory_before = memory_after = memory_peak = 0
         
-        # GPU memory if available
+        # GPU memory if available - with error handling
         gpu_memory_before = None
         gpu_memory_after = None
-        if torch.cuda.is_available():
-            gpu_memory_before = torch.cuda.memory_allocated() / 1024 / 1024  # MB
-            gpu_memory_after = torch.cuda.memory_allocated() / 1024 / 1024   # MB
+        try:
+            if torch.cuda.is_available():
+                gpu_memory_before = torch.cuda.memory_allocated() / 1024 / 1024  # MB
+                gpu_memory_after = torch.cuda.memory_allocated() / 1024 / 1024   # MB
+        except (RuntimeError, AttributeError) as e:
+            logging.warning(f"GPU memory monitoring failed: {e}")
         
-        # Tensor count if available
+        # Tensor count if available - with error handling
         tensor_count_before = None
         tensor_count_after = None
-        if torch.cuda.is_available():
-            tensor_count_before = len(torch.cuda.memory_allocated())
-            tensor_count_after = len(torch.cuda.memory_allocated())
+        try:
+            if torch.cuda.is_available():
+                # Note: This was incorrect - memory_allocated returns bytes, not a list
+                tensor_count_before = 0  # Placeholder - actual tensor counting would be more complex
+                tensor_count_after = 0
+        except (RuntimeError, AttributeError) as e:
+            logging.warning(f"Tensor count monitoring failed: {e}")
         
         metrics = PerformanceMetrics(
             operation_name=operation_name,
