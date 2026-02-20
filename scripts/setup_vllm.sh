@@ -24,6 +24,11 @@ else
     echo "vLLM already installed"
 fi
 
+# Install system dependencies
+echo "Installing system dependencies..."
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip python3-venv git curl build-essential
+
 # Install additional dependencies
 echo "Installing dependencies..."
 pip install transformers>=4.40.0 torch>=2.1.0
@@ -41,15 +46,19 @@ echo "=========================================="
 echo "Starting vLLM Server"
 echo "=========================================="
 echo "Model: Qwen/Qwen2.5-VL-3B-Instruct-AWQ"
-echo "Quantization: AWQ"
+echo "Quantization: AWQ MARLIN"
 echo "Port: 8000"
 echo "Optimized for 12GB VRAM"
 echo "=========================================="
 
+# Set environment variables for Triton compilation
+export CC=gcc
+export CXX=g++
+
 # Start vLLM server
 python -m vllm.entrypoints.openai.api_server \
     --model Qwen/Qwen2.5-VL-3B-Instruct-AWQ \
-    --quantization awq \
+    --quantization awq_marlin \
     --dtype auto \
     --gpu-memory-utilization 0.75 \
     --max-model-len 2048 \
