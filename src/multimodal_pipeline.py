@@ -21,6 +21,7 @@ from .secure_handler import SecureFileHandler
 from .performance_monitor import performance_monitor
 from .performance_analyzer import log_performance_recommendations
 from .path_utils import path_manager
+from .chunking_processor import ChunkingProcessor
 
 
 class MultimodalPipeline:
@@ -44,6 +45,7 @@ class MultimodalPipeline:
         self.signature_handler = SignatureHandler()
         self.audit_logger = AuditLogger()
         self.secure_handler = SecureFileHandler()
+        self.chunking_processor = ChunkingProcessor()
     
     async def process_document(self, pdf_path: Path) -> Optional[ExtractionResult]:
         """
@@ -70,12 +72,25 @@ class MultimodalPipeline:
             preprocess_time = (time.time() - preprocess_start) * 1000
             print(f"  Converted {len(images)} pages in {preprocess_time:.0f}ms")
             
-            # Stage 2: Vision Sweep - VLM Extraction
+            # Stage 2: Vision Sweep - VLM Extraction with Chunking
             print(f"Stage 2: VLM vision sweep...")
             vlm_start = time.time()
-            result, vlm_latency, visual_elements_dict = await self.vlm_client.extract_multimodal(
-                images, document_id
-            )
+            
+            # Try chunking if document is large
+            if len(images) > self.chunking_processor.max_pages_per_chunk:
+                print(f"  Large document ({len(images)} pages) - using chunking processor")
+                result, chunk_results = await self.chunking_processor.process_large_document(
+                    images, document_id
+                )
+                visual_elements_dict = None  # TODO: Merge visual elements from chunks
+                print(f"  Processed {len(chunk_results)} chunks")
+            else:
+                # Standard processing for small documents
+                result, vlm_latency, visual_elements_dict = await self.vlm_client.extract_multimodal(
+                    images, document_id
+                )
+                chunk_results = []
+            
             vlm_time = (time.time() - vlm_start) * 1000
             print(f"  VLM extraction completed in {vlm_time:.0f}ms")
             
