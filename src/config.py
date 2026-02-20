@@ -18,14 +18,14 @@ class Config:
     
     # VLM Settings (Multimodal Processing)
     VLM_ENABLED: bool = os.getenv("VLM_ENABLED", "true").lower() == "true"
-    VLM_MODEL: str = os.getenv("VLM_MODEL", "Qwen/Qwen2.5-VL-72B-Instruct-AWQ")
+    VLM_MODEL: str = os.getenv("VLM_MODEL", "Qwen/Qwen2.5-VL-7B-Instruct")
     VLM_HOST: str = os.getenv("VLM_HOST", "localhost")
     VLM_PORT: int = int(os.getenv("VLM_PORT", "8000"))
-    VLM_QUANTIZATION: str = os.getenv("VLM_QUANTIZATION", "awq-4bit")
-    VLM_MAX_CONCURRENT_PAGES: int = int(os.getenv("VLM_MAX_CONCURRENT_PAGES", "4"))
-    VLM_BATCH_SIZE: int = int(os.getenv("VLM_BATCH_SIZE", "2"))
-    VLM_GPU_MEMORY_UTILIZATION: float = float(os.getenv("VLM_GPU_MEMORY_UTILIZATION", "0.9"))
-    VLM_MAX_MODEL_LEN: int = int(os.getenv("VLM_MAX_MODEL_LEN", "8192"))
+    VLM_QUANTIZATION: str = os.getenv("VLM_QUANTIZATION", "gptq")
+    VLM_MAX_CONCURRENT_PAGES: int = int(os.getenv("VLM_MAX_CONCURRENT_PAGES", "2"))
+    VLM_BATCH_SIZE: int = int(os.getenv("VLM_BATCH_SIZE", "1"))
+    VLM_GPU_MEMORY_UTILIZATION: float = float(os.getenv("VLM_GPU_MEMORY_UTILIZATION", "0.85"))
+    VLM_MAX_MODEL_LEN: int = int(os.getenv("VLM_MAX_MODEL_LEN", "4096"))
     
     # Ollama SLM settings (Legacy text-only mode)
     OLLAMA_HOST: str = os.getenv("OLLAMA_HOST", "localhost")

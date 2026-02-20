@@ -1,10 +1,10 @@
 # Medical Data Extraction System
 
 HIPAA-Compliant **Fully Local Processing** with dual-mode support:
-- **Grade A (95%+ accuracy)**: Multimodal VLM with Qwen2.5-VL-72B + YOLOv8 signature detection
+- **Grade A (90%+ accuracy)**: Multimodal VLM with Qwen2.5-VL-7B + YOLOv8 signature detection
 - **Grade B (85-90% accuracy)**: Legacy text-only with SOLAR 10.7B + OCR
 
-**System Requirements**: Windows 11 + WSL 2.0 + Docker Desktop + NVIDIA GPU (24GB VRAM for VLM, 12GB for legacy)
+**System Requirements**: Windows 11 + WSL 2.0 + Docker Desktop + NVIDIA GPU (12GB+ VRAM for VLM, 12GB for legacy)
 
 ## Quick Start
 
@@ -40,7 +40,7 @@ winget install UB-Mannheim.Tesseract
 ```
 
 **For VLM Mode - Setup vLLM:**
-```bash
+```bashl
 # Run setup script
 chmod +x scripts/setup_vllm.sh
 ./scripts/setup_vllm.sh
@@ -106,7 +106,7 @@ Results are saved to `results/` as JSON files.
 - ✅ Visual grounding with bounding boxes
 - ✅ Stamp/seal detection
 
-**Performance**: 4-7 sec/page on RTX 4090
+**Performance**: 2-3 sec/page on RTX 4070/3060 (12GB VRAM), 4-7 sec/page on RTX 4090 (24GB VRAM)
 
 #### Grade B: Legacy Text-Only (85-90% Accuracy)
 
@@ -121,9 +121,9 @@ Results are saved to `results/` as JSON files.
 
 **VLM Mode:**
 - **CPU**: Orchestration and overflow
-- **GPU**: Qwen2.5-VL-72B inference + YOLOv8 detection
+- **GPU**: Qwen2.5-VL-7B inference + YOLOv8 detection
 - **RAM**: 64GB for model + image staging
-- **VRAM**: 24GB (RTX 4090/3090) for 72B model, 12GB for 7B model
+- **VRAM**: 12GB+ (RTX 4070/3060 for 7B model, RTX 4090/3090 for 72B model)
 
 **Legacy Mode:**
 - **CPU**: SOLAR 10.7B inference

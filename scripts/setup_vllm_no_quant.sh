@@ -1,10 +1,10 @@
 #!/bin/bash
-# Setup script for vLLM server with Qwen2.5-VL-72B
+# Setup script for vLLM server with Qwen2.5-VL-7B (no quantization - fallback)
 
 set -e
 
 echo "=========================================="
-echo "vLLM Setup for Qwen2.5-VL-7B (12GB VRAM)"
+echo "vLLM Setup for Qwen2.5-VL-7B (No Quantization)"
 echo "=========================================="
 
 # Check for CUDA
@@ -34,21 +34,20 @@ mkdir -p "$MODEL_CACHE_DIR"
 
 echo ""
 echo "=========================================="
-echo "Starting vLLM Server"
+echo "Starting vLLM Server (No Quantization)"
 echo "=========================================="
 echo "Model: Qwen/Qwen2.5-VL-7B-Instruct"
-echo "Quantization: GPTQ"
+echo "Quantization: None (FP16/BF16)"
 echo "Port: 8000"
-echo "Optimized for 12GB VRAM"
+echo "Memory Usage: Higher (~15GB VRAM)"
 echo "=========================================="
 
-# Start vLLM server
+# Start vLLM server without quantization
 python -m vllm.entrypoints.openai.api_server \
     --model Qwen/Qwen2.5-VL-7B-Instruct \
-    --quantization gptq \
     --dtype auto \
-    --gpu-memory-utilization 0.85 \
-    --max-model-len 4096 \
+    --gpu-memory-utilization 0.7 \
+    --max-model-len 2048 \
     --port 8000 \
     --host 0.0.0.0 \
     --served-model-name Qwen/Qwen2.5-VL-7B-Instruct \
