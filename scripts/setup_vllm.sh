@@ -28,6 +28,10 @@ fi
 echo "Installing dependencies..."
 pip install transformers>=4.40.0 torch>=2.1.0
 
+# Optional performance enhancement
+echo "Installing optional performance extensions..."
+pip install torch-c-dlpack-ext || echo "Optional: torch-c-dlpack-ext installation failed (non-critical)"
+
 # Create model cache directory
 MODEL_CACHE_DIR="${MODEL_CACHE_DIR:-models/cache}"
 mkdir -p "$MODEL_CACHE_DIR"

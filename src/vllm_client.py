@@ -2,18 +2,16 @@
 
 import asyncio
 import aiohttp
-import time
-import json
-from pathlib import Path
-from typing import Optional, List, Dict, Any, Tuple
 import base64
-from io import BytesIO
-from PIL import Image
 import numpy as np
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Any
+import time
+import logging
 
 from .config import Config
-from .models import ExtractionResult
-
+from .models import ExtractionResult, VisualElements
+from .performance_monitor import performance_monitor
 
 class VLLMClient:
     """Client for Vision-Language Model inference via vLLM."""
@@ -110,16 +108,21 @@ Return ONLY the JSON, no explanation or markdown formatting.
         Returns:
             Tuple of (ExtractionResult, latency_ms, visual_elements)
         """
+        # Start performance monitoring
+        perf_start = performance_monitor.start_operation("vlm_multimodal_extraction")
+        
         start_time = time.time()
         
         # Build prompt
         prompt = self._build_multimodal_prompt(Config.FIELD_ALIASES)
         
-        # Convert images to base64
+        # Convert images to base64 (monitor tensor operations)
+        convert_start = performance_monitor.start_operation("numpy_to_base64_conversion")
         image_data = []
         for img in images:
             img_b64 = self._numpy_to_base64(img)
             image_data.append(img_b64)
+        performance_monitor.end_operation("numpy_to_base64_conversion", convert_start)
         
         # Retry logic
         for attempt in range(1, self.max_retries + 1):
@@ -198,8 +201,11 @@ Return ONLY the JSON, no explanation or markdown formatting.
             
             except Exception as e:
                 print(f"Unexpected error in VLM extraction: {e}")
+                performance_monitor.end_operation("vlm_multimodal_extraction", perf_start)
                 return None, (time.time() - start_time) * 1000, None
         
+        # End performance monitoring
+        performance_monitor.end_operation("vlm_multimodal_extraction", perf_start)
         return None, (time.time() - start_time) * 1000, None
     
     def _numpy_to_base64(self, image: np.ndarray) -> str:

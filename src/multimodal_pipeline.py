@@ -4,11 +4,11 @@ import asyncio
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 import hashlib
 
 from .config import Config
-from .models import ExtractionResult
+from .models import ExtractionResult, VisualElements, MultimodalMetadata
 from .visual_models import (
     VisualElements, MultimodalExtractionMetadata,
     SignatureElement, BoundingBox
@@ -18,6 +18,8 @@ from .image_preprocessor import ImagePreprocessor
 from .signature_handler import SignatureHandler, SignatureDetection
 from .audit_logger import AuditLogger
 from .secure_handler import SecureFileHandler
+from .performance_monitor import performance_monitor
+from .performance_analyzer import log_performance_recommendations
 
 
 class MultimodalPipeline:
@@ -139,6 +141,10 @@ class MultimodalPipeline:
             self.image_preprocessor.cleanup_temp_images()
             
             print(f"✅ Multimodal extraction completed in {result.extraction_latency_ms:.0f}ms")
+            
+            # Log performance recommendations
+            log_performance_recommendations()
+            
             return result
             
         except Exception as e:
